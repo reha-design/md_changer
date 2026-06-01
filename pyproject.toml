@@ -1,0 +1,15 @@
+[project]
+name = "md-changer"
+version = "1.0.0"
+description = "Windows GUI app that converts Markdown files to PDF with Playwright Chromium."
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "markdown>=3.6",
+    "playwright>=1.44",
+]
+
+[dependency-groups]
+build = [
+    "pyinstaller>=6.6",
+]
