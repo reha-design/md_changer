@@ -13,7 +13,7 @@ Markdown 파일을 PDF로 변환하는 Windows GUI 프로그램입니다. 기존
 
 ## 사용 기술 스택
 
-- Python 3.14+
+- Python 3.13+
 - tkinter
 - markdown
 - Playwright

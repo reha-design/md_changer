@@ -1,5 +1,13 @@
 $ErrorActionPreference = "Stop"
 
+$projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$pythonCommand = Get-Command python -ErrorAction Stop
+
+$env:UV_CACHE_DIR = Join-Path $projectRoot ".uv-cache"
+$env:UV_NO_MANAGED_PYTHON = "1"
+$env:UV_PYTHON_DOWNLOADS = "never"
+$env:UV_PYTHON = $pythonCommand.Source
+
 function Invoke-NativeCommand {
     param(
         [Parameter(Mandatory = $true)]
