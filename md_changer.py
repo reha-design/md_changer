@@ -204,11 +204,7 @@ def filter_new_markdown_files(
     return new_files, skipped
 
 
-def convert_markdown_to_pdf(input_file: Path, output_folder: Path) -> Path:
-    configure_playwright_browser_path()
-
-    from playwright.sync_api import sync_playwright
-
+def convert_markdown_to_pdf(input_file: Path, output_folder: Path, browser) -> Path:
     markdown_text = input_file.read_text(encoding="utf-8")
     output_file = output_folder / f"{input_file.stem}.pdf"
     html_text = build_html(markdown_text, input_file)
@@ -217,9 +213,8 @@ def convert_markdown_to_pdf(input_file: Path, output_folder: Path) -> Path:
     try:
         html_file.write_text(html_text, encoding="utf-8")
 
-        with sync_playwright() as playwright:
-            browser = playwright.chromium.launch(headless=True)
-            page = browser.new_page()
+        page = browser.new_page()
+        try:
             page.goto(html_file.resolve().as_uri(), wait_until="networkidle", timeout=30000)
             page.pdf(
                 path=str(output_file),
@@ -227,7 +222,8 @@ def convert_markdown_to_pdf(input_file: Path, output_folder: Path) -> Path:
                 print_background=True,
                 prefer_css_page_size=True,
             )
-            browser.close()
+        finally:
+            page.close()
     finally:
         try:
             html_file.unlink(missing_ok=True)
@@ -243,6 +239,7 @@ class MarkdownPdfApp:
         self.selected_files: list[Path] = []
         self.output_folder = StringVar()
         self.status = StringVar(value="변환할 Markdown 파일과 출력 폴더를 선택하세요.")
+        self._converting = False
 
         self.root.title(APP_NAME)
         self.root.geometry("720x480")
@@ -325,6 +322,8 @@ class MarkdownPdfApp:
             self.output_folder.set(folder)
 
     def handle_drop(self, event) -> None:
+        if self._converting:
+            return
         raw_paths = self.root.tk.splitlist(event.data)
         self.add_files(raw_paths)
 
@@ -360,6 +359,7 @@ class MarkdownPdfApp:
             self.file_listbox.insert(tk.END, str(path))
 
     def _set_controls_enabled(self, enabled: bool) -> None:
+        self._converting = not enabled
         state = "normal" if enabled else "disabled"
         self.convert_button.configure(state=state)
         self.add_button.configure(state=state)
@@ -391,18 +391,29 @@ class MarkdownPdfApp:
         thread.start()
 
     def _convert_in_background(self, files: list[Path], output_folder: Path) -> None:
+        configure_playwright_browser_path()
+
+        from playwright.sync_api import sync_playwright
+
         total = len(files)
         results: list[tuple[Path, Path | None, str | None]] = []
-        for index, input_file in enumerate(files, start=1):
-            self.root.after(
-                0, self.status.set, f"PDF 변환 중입니다... ({index}/{total}) {input_file.name}"
-            )
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=True)
             try:
-                output_file = convert_markdown_to_pdf(input_file, output_folder)
-            except Exception as exc:
-                results.append((input_file, None, str(exc)))
-            else:
-                results.append((input_file, output_file, None))
+                for index, input_file in enumerate(files, start=1):
+                    self.root.after(
+                        0,
+                        self.status.set,
+                        f"PDF 변환 중입니다... ({index}/{total}) {input_file.name}",
+                    )
+                    try:
+                        output_file = convert_markdown_to_pdf(input_file, output_folder, browser)
+                    except Exception as exc:
+                        results.append((input_file, None, str(exc)))
+                    else:
+                        results.append((input_file, output_file, None))
+            finally:
+                browser.close()
 
         self.root.after(0, self._conversion_finished, results)
 
