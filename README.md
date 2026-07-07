@@ -4,9 +4,11 @@ Markdown 파일을 PDF로 변환하는 Windows GUI 프로그램입니다. 기존
 
 ## 주요 기능
 
-- Markdown 파일 선택
+- Markdown 파일 다중 선택 및 드래그 앤 드롭 추가
+- 선택한 파일 목록에서 개별 제거 또는 전체 비우기
 - PDF 저장 폴더 선택
-- 버튼 한 번으로 PDF 변환
+- 버튼 한 번으로 여러 Markdown 파일을 각각 PDF로 일괄 변환
+- 변환 완료 후 성공/실패 건수와 실패 파일 요약 표시
 - 한글 Markdown 문서 지원
 - 표, 코드블록, 이미지, 링크 등 기본 Markdown 요소 지원
 - Windows 포터블 패키지 배포
@@ -15,6 +17,7 @@ Markdown 파일을 PDF로 변환하는 Windows GUI 프로그램입니다. 기존
 
 - Python 3.13+
 - tkinter
+- tkinterdnd2
 - markdown
 - Playwright
 - Chromium headless
@@ -27,11 +30,12 @@ Markdown 파일을 PDF로 변환하는 Windows GUI 프로그램입니다. 기존
 1. GitHub Releases에서 `md_changer_portable.zip`을 다운로드합니다.
 2. 원하는 폴더에 압축을 풉니다.
 3. 압축 해제한 폴더 안의 `md_changer.exe`를 실행합니다.
-4. `입력 파일 선택` 버튼으로 `.md` 또는 `.markdown` 파일을 선택합니다.
-5. `출력 폴더 선택` 버튼으로 PDF 저장 위치를 선택합니다.
-6. `PDF 변환` 버튼을 클릭합니다.
+4. `파일 추가` 버튼으로 `.md` 또는 `.markdown` 파일을 하나 이상 선택하거나, 파일을 목록 영역으로 끌어다 놓습니다.
+5. 필요하면 `선택 제거` 또는 `목록 비우기`로 목록을 정리합니다.
+6. `출력 폴더 선택` 버튼으로 PDF 저장 위치를 선택합니다.
+7. `PDF 변환` 버튼을 클릭합니다.
 
-출력 PDF는 입력 Markdown 파일과 같은 이름으로 저장되며, 확장자만 `.pdf`로 바뀝니다. 같은 이름의 PDF가 이미 있으면 새 파일로 덮어씁니다.
+선택한 각 Markdown 파일은 같은 이름의 개별 PDF로 출력 폴더에 저장되며, 확장자만 `.pdf`로 바뀝니다. 같은 이름의 PDF가 이미 있으면 새 파일로 덮어씁니다. 변환이 끝나면 성공/실패 건수와 실패한 파일 목록을 요약 창으로 보여줍니다.
 
 ## 개발 환경 실행
 
@@ -78,4 +82,5 @@ md_changer.spec     PyInstaller 빌드 설정
 build.ps1           uv 기반 Windows 빌드 스크립트
 pyproject.toml      프로젝트 메타데이터와 의존성
 uv.lock             재현 가능한 의존성 잠금 파일
+tests/              단위 테스트
 ```

@@ -1,7 +1,9 @@
 __pycache__/
 *.py[cod]
 .venv/
+.worktrees/
 
 build/
 dist/
 ms-playwright/
+result/
