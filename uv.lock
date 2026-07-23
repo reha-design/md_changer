@@ -92,7 +92,7 @@ wheels = [
 [[package]]
 name = "md-changer"
 version = "1.0.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "markdown" },
     { name = "playwright" },

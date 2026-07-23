@@ -1,7 +1,11 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "md-changer"
 version = "1.0.0"
-description = "Windows GUI app that converts Markdown files to PDF with Playwright Chromium."
+description = "Windows GUI & CLI app that converts Markdown files to PDF with Playwright Chromium."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -9,6 +13,13 @@ dependencies = [
     "playwright>=1.44",
     "tkinterdnd2>=0.4.2",
 ]
+
+[project.scripts]
+md-changer = "md_changer.cli:main"
+md-changer-gui = "md_changer.gui:launch_gui"
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [dependency-groups]
 build = [

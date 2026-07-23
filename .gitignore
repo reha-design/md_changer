@@ -1,5 +1,6 @@
 __pycache__/
 *.py[cod]
+*.egg-info/
 .venv/
 .worktrees/
 
@@ -7,3 +8,4 @@ build/
 dist/
 ms-playwright/
 result/
+test_output/
