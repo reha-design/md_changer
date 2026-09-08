@@ -21,6 +21,9 @@ md-changer-gui = "md_changer.gui:launch_gui"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+md_changer = ["assets/*.js", "assets/*.txt"]
+
 [dependency-groups]
 build = [
     "pyinstaller>=6.6",
