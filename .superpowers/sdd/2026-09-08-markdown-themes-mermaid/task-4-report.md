@@ -83,3 +83,63 @@ normal LF-to-CRLF informational warnings for the two edited source files.
 - GUI behavior was syntax-checked and covered by the shared full suite, but this
   project has no native Tkinter interaction test harness; the controls should be
   exercised manually when doing the Task 5 end-to-end verification.
+
+## Fix round: JSON parser errors and GUI total-failure title
+
+### RED
+
+Command:
+
+```powershell
+& .\.venv\Scripts\python.exe -m unittest tests.test_cli.CliIntegrationTests.test_json_invalid_theme_returns_one_error_document tests.test_cli.CliIntegrationTests.test_json_missing_input_returns_one_error_document tests.test_cli.CliIntegrationTests.test_json_discovery_exception_returns_one_error_document
+```
+
+Output:
+
+```text
+FFF
+AssertionError: 2 != 1
+AssertionError: 2 != 1
+AssertionError: -1 != 1
+Ran 3 tests in 0.039s
+FAILED (failures=3)
+```
+
+The two parser failures were terminating through argparse before JSON emission;
+the discovery exception was raised before the previous JSON error envelope.
+
+### GREEN
+
+Focused JSON regressions:
+
+```powershell
+& .\.venv\Scripts\python.exe -m unittest tests.test_cli.CliIntegrationTests.test_json_invalid_theme_returns_one_error_document tests.test_cli.CliIntegrationTests.test_json_missing_input_returns_one_error_document tests.test_cli.CliIntegrationTests.test_json_discovery_exception_returns_one_error_document
+```
+
+```text
+Ran 3 tests in 0.023s
+OK
+```
+
+Final verification:
+
+```powershell
+& .\.venv\Scripts\python.exe -m py_compile src\md_changer\cli.py src\md_changer\gui.py
+& .\.venv\Scripts\python.exe -m unittest tests.test_cli
+& .\.venv\Scripts\python.exe -m unittest discover -s tests
+git diff --check
+```
+
+```text
+Ran 9 tests in 0.088s
+OK
+Ran 42 tests in 0.879s
+OK
+```
+
+The JSON-aware parser captures argparse output only while parsing raw JSON-mode
+arguments, returns one JSON error document with a message, and preserves
+conventional argparse exits for non-JSON invocations. Discovery and CSS
+preflight now execute inside the JSON error envelope. The GUI warning title is
+`변환 실패` when every selected file fails, while mixed outcomes retain
+`변환 완료 (일부 실패)`.

@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import sys
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
 from md_changer.core import (
@@ -80,9 +82,10 @@ def _json_payload(
     theme: str,
     css_path: Path | None,
     batch: BatchConversionResult | None = None,
+    message: str | None = None,
 ) -> dict[str, object]:
     results = batch.results if batch is not None else ()
-    return {
+    payload: dict[str, object] = {
         "status": status,
         "converted_count": batch.converted_count if batch is not None else 0,
         "failed_count": batch.failed_count if batch is not None else 0,
@@ -91,6 +94,9 @@ def _json_payload(
         "custom_css": str(css_path) if css_path is not None else None,
         "files": [_file_payload(result) for result in results],
     }
+    if message is not None:
+        payload["message"] = message
+    return payload
 
 
 def _batch_status(batch: BatchConversionResult) -> str:
@@ -105,22 +111,77 @@ def _print_error(message: str) -> None:
     print(f"Error: {message}", file=sys.stderr)
 
 
-def main(args: list[str] | None = None) -> int:
-    parsed_args = parse_args(args)
-    input_paths = discover_markdown_files(parsed_args.input)
-    css_path = Path(parsed_args.css).expanduser().resolve() if parsed_args.css else None
-    output_folder: Path | None = None
+def _argument_error_message(parser_output: str) -> str:
+    """Extract argparse's actionable error line without its usage banner."""
+    for line in reversed(parser_output.splitlines()):
+        if ": error: " in line:
+            return line.split(": error: ", 1)[1]
+    return "Unable to parse command-line arguments."
 
-    if input_paths:
-        output_folder = (
-            Path(parsed_args.output).resolve()
-            if parsed_args.output
-            else input_paths[0].parent.resolve()
+
+def _parse_json_args(raw_args: list[str]) -> tuple[argparse.Namespace | None, str | None]:
+    """Parse JSON-mode arguments without allowing argparse to write output."""
+    parser_stdout = io.StringIO()
+    parser_stderr = io.StringIO()
+    with redirect_stdout(parser_stdout), redirect_stderr(parser_stderr):
+        try:
+            return parse_args(raw_args), None
+        except SystemExit:
+            message = _argument_error_message(parser_stderr.getvalue())
+            if message == "Unable to parse command-line arguments.":
+                message = "Argument parsing ended before conversion could begin."
+            return None, message
+
+
+def _emit_json_error(
+    message: str,
+    *,
+    output_folder: Path | None = None,
+    theme: str = "default",
+    css_path: Path | None = None,
+) -> None:
+    print(
+        json.dumps(
+            _json_payload(
+                status="error",
+                output_folder=output_folder,
+                theme=theme,
+                css_path=css_path,
+                message=message,
+            ),
+            ensure_ascii=False,
+            indent=2,
         )
-    elif parsed_args.output:
-        output_folder = Path(parsed_args.output).resolve()
+    )
+
+
+def main(args: list[str] | None = None) -> int:
+    raw_args = list(args) if args is not None else sys.argv[1:]
+    json_requested = "--json" in raw_args
+    if json_requested:
+        parsed_args, parse_error = _parse_json_args(raw_args)
+        if parse_error is not None:
+            _emit_json_error(parse_error)
+            return 1
+        assert parsed_args is not None
+    else:
+        parsed_args = parse_args(raw_args)
+
+    output_folder: Path | None = None
+    css_path: Path | None = None
 
     try:
+        input_paths = discover_markdown_files(parsed_args.input)
+        css_path = Path(parsed_args.css).expanduser().resolve() if parsed_args.css else None
+        if input_paths:
+            output_folder = (
+                Path(parsed_args.output).resolve()
+                if parsed_args.output
+                else input_paths[0].parent.resolve()
+            )
+        elif parsed_args.output:
+            output_folder = Path(parsed_args.output).resolve()
+
         resolved_css_path, custom_css = _resolve_custom_css(parsed_args.css)
         css_path = resolved_css_path
 
@@ -154,17 +215,11 @@ def main(args: list[str] | None = None) -> int:
         )
     except Exception as error:
         if parsed_args.json:
-            print(
-                json.dumps(
-                    _json_payload(
-                        status="error",
-                        output_folder=output_folder,
-                        theme=parsed_args.theme,
-                        css_path=css_path,
-                    ),
-                    ensure_ascii=False,
-                    indent=2,
-                )
+            _emit_json_error(
+                str(error) or type(error).__name__,
+                output_folder=output_folder,
+                theme=parsed_args.theme,
+                css_path=css_path,
             )
         _print_error(str(error) or type(error).__name__)
         return 1

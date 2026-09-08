@@ -26,7 +26,12 @@ class CliIntegrationTests(unittest.TestCase):
         stdout = io.StringIO()
         stderr = io.StringIO()
         with redirect_stdout(stdout), redirect_stderr(stderr):
-            code = cli.main(args)
+            try:
+                code = cli.main(args)
+            except SystemExit as exit_error:
+                code = exit_error.code
+            except OSError:
+                code = -1
         return code, stdout.getvalue(), stderr.getvalue()
 
     def test_defaults_to_default_theme_and_no_custom_css(self) -> None:
@@ -64,6 +69,33 @@ class CliIntegrationTests(unittest.TestCase):
                 self.assertEqual(stderr.count("Error:"), 1)
                 self.assertEqual(json.loads(stdout)["status"], "error")
                 detailed.assert_not_called()
+
+    def test_json_invalid_theme_returns_one_error_document(self) -> None:
+        code, stdout, _stderr = self.run_main(
+            ["--json", "--input", str(self.source), "--theme", "invalid"]
+        )
+
+        self.assertEqual(code, 1)
+        payload = json.loads(stdout)
+        self.assertEqual(payload["status"], "error")
+        self.assertIn("invalid choice", payload["message"])
+
+    def test_json_missing_input_returns_one_error_document(self) -> None:
+        code, stdout, _stderr = self.run_main(["--json"])
+
+        self.assertEqual(code, 1)
+        payload = json.loads(stdout)
+        self.assertEqual(payload["status"], "error")
+        self.assertIn("required", payload["message"])
+
+    def test_json_discovery_exception_returns_one_error_document(self) -> None:
+        with patch.object(cli, "discover_markdown_files", side_effect=OSError("input scan failed")):
+            code, stdout, _stderr = self.run_main(["--json", "--input", str(self.source)])
+
+        self.assertEqual(code, 1)
+        payload = json.loads(stdout)
+        self.assertEqual(payload["status"], "error")
+        self.assertEqual(payload["message"], "input scan failed")
 
     def test_success_json_has_complete_schema_and_exit_zero(self) -> None:
         css_path = self.directory / "custom.css"

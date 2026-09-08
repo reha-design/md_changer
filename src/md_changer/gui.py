@@ -278,7 +278,7 @@ class MarkdownPdfApp:
             if not result.success
         )
         messagebox.showwarning(
-            "변환 완료 (일부 실패)",
+            "변환 실패" if batch.converted_count == 0 else "변환 완료 (일부 실패)",
             f"성공 {batch.converted_count}개, 실패 {batch.failed_count}개\n"
             f"저장 위치: {output_folder}\n\n실패 파일:\n{failed_files}",
         )
