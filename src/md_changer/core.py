@@ -19,6 +19,51 @@ APP_NAME = "Markdown PDF 변환기"
 MARKDOWN_SUFFIXES = {".md", ".markdown"}
 
 
+def discover_markdown_files(raw_inputs: Iterable[str]) -> list[Path]:
+    """Return unique, existing Markdown files from file and directory inputs."""
+    discovered: list[Path] = []
+    seen: set[Path] = set()
+
+    for raw_input in raw_inputs:
+        path = Path(raw_input)
+        if path.is_file():
+            candidates = [path]
+        elif path.is_dir():
+            candidates = sorted(
+                (candidate for candidate in path.rglob("*") if candidate.is_file()),
+                key=lambda candidate: str(candidate.resolve()).casefold(),
+            )
+        else:
+            continue
+
+        for candidate in candidates:
+            if candidate.suffix.lower() not in MARKDOWN_SUFFIXES:
+                continue
+            resolved = candidate.resolve()
+            if resolved not in seen:
+                seen.add(resolved)
+                discovered.append(resolved)
+
+    return discovered
+
+
+def allocate_output_path(
+    input_file: Path, output_folder: Path, reserved: set[Path] | None = None
+) -> Path:
+    """Find the first unused PDF path for an input Markdown file."""
+    input_file = Path(input_file).resolve()
+    output_folder = Path(output_folder).resolve()
+    reserved_paths = {Path(path).resolve() for path in reserved or set()}
+
+    suffix = 1
+    while True:
+        filename = f"{input_file.stem}.pdf" if suffix == 1 else f"{input_file.stem}-{suffix}.pdf"
+        candidate = output_folder / filename
+        if not candidate.exists() and candidate not in reserved_paths:
+            return candidate
+        suffix += 1
+
+
 def resource_path(relative_path: str) -> Path:
     """Get absolute path to resource, works for dev and for PyInstaller."""
     base_path = getattr(sys, "_MEIPASS", None)
@@ -115,7 +160,7 @@ def convert_markdown_to_pdf(
     output_folder.mkdir(parents=True, exist_ok=True)
 
     markdown_text = input_file.read_text(encoding="utf-8")
-    output_file = output_folder / f"{input_file.stem}.pdf"
+    output_file = allocate_output_path(input_file, output_folder)
     html_text = build_html(markdown_text, input_file)
 
     html_file = output_folder / f".{input_file.stem}.md_changer_{uuid.uuid4().hex}.html"

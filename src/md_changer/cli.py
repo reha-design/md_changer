@@ -6,7 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from md_changer.core import MARKDOWN_SUFFIXES, batch_convert_markdown_to_pdf
+from md_changer.core import batch_convert_markdown_to_pdf, discover_markdown_files
 
 
 def parse_args(args: list[str] | None = None) -> argparse.Namespace:
@@ -44,17 +44,11 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
 def main(args: list[str] | None = None) -> int:
     parsed_args = parse_args(args)
 
-    input_paths: list[Path] = []
-    for item in parsed_args.input:
-        path = Path(item)
-        if path.is_file() and path.suffix.lower() in MARKDOWN_SUFFIXES:
-            input_paths.append(path)
-        elif path.is_dir():
-            for ext in MARKDOWN_SUFFIXES:
-                input_paths.extend(path.glob(f"*{ext}"))
-                input_paths.extend(path.glob(f"**/*{ext}"))
-        else:
-            if not parsed_args.quiet and not parsed_args.json:
+    input_paths = discover_markdown_files(parsed_args.input)
+    if not parsed_args.quiet and not parsed_args.json:
+        for item in parsed_args.input:
+            path = Path(item)
+            if not path.is_file() and not path.is_dir():
                 print(f"Warning: Skipped invalid or non-markdown input: {item}", file=sys.stderr)
 
     if not input_paths:
