@@ -32,6 +32,14 @@ class ThemeRegistryTests(unittest.TestCase):
         ):
             get_theme("unknown")
 
+    def test_built_in_mermaid_variables_cannot_mutate_the_shared_registry(self) -> None:
+        variables = get_theme("modern").mermaid_variables
+
+        with self.assertRaises(TypeError):
+            variables["primaryColor"] = "#000000"
+
+        self.assertEqual(get_theme("modern").mermaid_variables["primaryColor"], "#dbeafe")
+
     def test_default_html_retains_the_existing_print_baseline(self) -> None:
         html = build_html("# Title", Path("document.md"))
 

@@ -1,6 +1,8 @@
 """Built-in document themes and CSS layer composition."""
 
 from dataclasses import dataclass
+from collections.abc import Mapping
+from types import MappingProxyType
 
 from md_changer.styles import COMMON_PRINT_CSS
 
@@ -13,7 +15,7 @@ class ThemeDefinition:
     label: str
     css: str
     mermaid_theme: str
-    mermaid_variables: dict[str, str]
+    mermaid_variables: Mapping[str, str]
 
 
 THEMES = (
@@ -22,11 +24,11 @@ THEMES = (
         label="기본",
         css="",
         mermaid_theme="default",
-        mermaid_variables={
+        mermaid_variables=MappingProxyType({
             "primaryColor": "#f6f8fa",
             "primaryTextColor": "#202124",
             "lineColor": "#57606a",
-        },
+        }),
     ),
     ThemeDefinition(
         name="modern",
@@ -39,12 +41,12 @@ h2 { border-bottom-color: #bfdbfe; font-size: 24px; }
 a { color: #2563eb; }
 """,
         mermaid_theme="base",
-        mermaid_variables={
+        mermaid_variables=MappingProxyType({
             "primaryColor": "#dbeafe",
             "primaryTextColor": "#0f4c81",
             "primaryBorderColor": "#2563eb",
             "lineColor": "#2563eb",
-        },
+        }),
     ),
     ThemeDefinition(
         name="minimal",
@@ -58,12 +60,12 @@ blockquote { border-left-color: #a3a3a3; color: #525252; }
 th { background: #fafafa; }
 """,
         mermaid_theme="neutral",
-        mermaid_variables={
+        mermaid_variables=MappingProxyType({
             "primaryColor": "#f5f5f5",
             "primaryTextColor": "#262626",
             "primaryBorderColor": "#737373",
             "lineColor": "#525252",
-        },
+        }),
     ),
     ThemeDefinition(
         name="report",
@@ -79,12 +81,12 @@ th { background: #e2e8f0; }
 a { color: #1e3a5f; }
 """,
         mermaid_theme="base",
-        mermaid_variables={
+        mermaid_variables=MappingProxyType({
             "primaryColor": "#e2e8f0",
             "primaryTextColor": "#1e3a5f",
             "primaryBorderColor": "#64748b",
             "lineColor": "#475569",
-        },
+        }),
     ),
 )
 

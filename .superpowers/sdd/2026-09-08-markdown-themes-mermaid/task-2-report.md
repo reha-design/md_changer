@@ -75,10 +75,63 @@ OK
 
 ## Concerns
 
-- `ThemeDefinition` is frozen, but its required `dict[str, str]`
-  `mermaid_variables` field is shallowly mutable by Python callers. This
-  follows the specified interface; future API hardening could use a mapping
-  proxy if a deep-immutable mapping is desired.
 - Mermaid variables are registry data only in this task. Offline Mermaid
   rendering and consumption of these variables are intentionally deferred to
   Task 3.
+
+## Fix round: deep immutability of Mermaid variables
+
+### Root cause
+
+`@dataclass(frozen=True)` protects reassignment of the
+`mermaid_variables` attribute but does not make a nested `dict` immutable.
+`get_theme()` and `list_themes()` return the shared definitions, so callers
+could mutate the registry through that nested dictionary.
+
+### RED
+
+Command:
+
+```powershell
+uv run python -m unittest tests/test_themes.py -v
+```
+
+Output (exit 1):
+
+```text
+FAIL: test_built_in_mermaid_variables_cannot_mutate_the_shared_registry
+AssertionError: TypeError not raised
+Ran 6 tests in 0.131s
+FAILED (failures=1)
+```
+
+### Fix and GREEN
+
+Changed `ThemeDefinition.mermaid_variables` to the honest
+`Mapping[str, str]` annotation and wrapped every built-in variable mapping in
+`types.MappingProxyType`. The regression test assigns through the public
+`get_theme("modern")` result, requires a `TypeError`, and then confirms the
+registry value remains unchanged.
+
+Commands:
+
+```powershell
+uv run python -m unittest tests/test_themes.py -v
+uv run python -m unittest discover -s tests -v
+```
+
+Output (both exit 0):
+
+```text
+Ran 6 tests in 0.174s
+OK
+
+Ran 15 tests in 0.215s
+OK
+```
+
+### Updated concern
+
+The built-in `ThemeDefinition` values are now deeply immutable with respect to
+their Mermaid-variable mappings. Mermaid rendering remains intentionally
+deferred to Task 3.
