@@ -6,7 +6,7 @@ import argparse
 import io
 import json
 import sys
-from contextlib import redirect_stderr, redirect_stdout
+from contextlib import redirect_stderr
 from pathlib import Path
 
 from md_changer.core import (
@@ -119,18 +119,21 @@ def _argument_error_message(parser_output: str) -> str:
     return "Unable to parse command-line arguments."
 
 
-def _parse_json_args(raw_args: list[str]) -> tuple[argparse.Namespace | None, str | None]:
-    """Parse JSON-mode arguments without allowing argparse to write output."""
-    parser_stdout = io.StringIO()
+def _parse_json_args(
+    raw_args: list[str],
+) -> tuple[argparse.Namespace | None, str | None, int | None]:
+    """Parse JSON mode, suppressing errors but preserving successful help output."""
     parser_stderr = io.StringIO()
-    with redirect_stdout(parser_stdout), redirect_stderr(parser_stderr):
+    with redirect_stderr(parser_stderr):
         try:
-            return parse_args(raw_args), None
-        except SystemExit:
+            return parse_args(raw_args), None, None
+        except SystemExit as exit_error:
+            if exit_error.code == 0:
+                return None, None, 0
             message = _argument_error_message(parser_stderr.getvalue())
             if message == "Unable to parse command-line arguments.":
                 message = "Argument parsing ended before conversion could begin."
-            return None, message
+            return None, message, 1
 
 
 def _emit_json_error(
@@ -159,7 +162,9 @@ def main(args: list[str] | None = None) -> int:
     raw_args = list(args) if args is not None else sys.argv[1:]
     json_requested = "--json" in raw_args
     if json_requested:
-        parsed_args, parse_error = _parse_json_args(raw_args)
+        parsed_args, parse_error, parse_exit = _parse_json_args(raw_args)
+        if parse_exit == 0:
+            return 0
         if parse_error is not None:
             _emit_json_error(parse_error)
             return 1

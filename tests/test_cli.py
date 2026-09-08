@@ -88,6 +88,14 @@ class CliIntegrationTests(unittest.TestCase):
         self.assertEqual(payload["status"], "error")
         self.assertIn("required", payload["message"])
 
+    def test_json_help_preserves_argparse_help_and_success_exit(self) -> None:
+        code, stdout, stderr = self.run_main(["--json", "--help"])
+
+        self.assertEqual(code, 0)
+        self.assertIn("usage: md-changer", stdout)
+        self.assertIn("--json", stdout)
+        self.assertEqual(stderr, "")
+
     def test_json_discovery_exception_returns_one_error_document(self) -> None:
         with patch.object(cli, "discover_markdown_files", side_effect=OSError("input scan failed")):
             code, stdout, _stderr = self.run_main(["--json", "--input", str(self.source)])

@@ -143,3 +143,59 @@ conventional argparse exits for non-JSON invocations. Discovery and CSS
 preflight now execute inside the JSON error envelope. The GUI warning title is
 `변환 실패` when every selected file fails, while mixed outcomes retain
 `변환 완료 (일부 실패)`.
+
+## Fix round: preserve JSON-mode help
+
+### RED
+
+Command:
+
+```powershell
+& .\.venv\Scripts\python.exe -m unittest tests.test_cli.CliIntegrationTests.test_json_help_preserves_argparse_help_and_success_exit
+```
+
+Output:
+
+```text
+F
+AssertionError: 1 != 0
+Ran 1 test in 0.011s
+FAILED (failures=1)
+```
+
+`--json --help` was being treated as a validation error because the JSON parser
+wrapper converted every `SystemExit` into an error result.
+
+### GREEN
+
+Focused help and JSON-validation regressions:
+
+```powershell
+& .\.venv\Scripts\python.exe -m unittest tests.test_cli.CliIntegrationTests.test_json_help_preserves_argparse_help_and_success_exit tests.test_cli.CliIntegrationTests.test_json_invalid_theme_returns_one_error_document tests.test_cli.CliIntegrationTests.test_json_missing_input_returns_one_error_document
+```
+
+```text
+Ran 3 tests in 0.026s
+OK
+```
+
+Final verification:
+
+```powershell
+& .\.venv\Scripts\python.exe -m py_compile src\md_changer\cli.py src\md_changer\gui.py
+& .\.venv\Scripts\python.exe -m unittest tests.test_cli
+& .\.venv\Scripts\python.exe -m unittest discover -s tests
+git diff --check
+```
+
+```text
+Ran 10 tests in 0.108s
+OK
+Ran 43 tests in 0.946s
+OK
+```
+
+The JSON argument wrapper now distinguishes `SystemExit(0)` from parser
+validation failures. Help output remains conventional and exits successfully;
+invalid JSON-mode arguments still emit exactly one JSON error document and exit
+with status 1.
