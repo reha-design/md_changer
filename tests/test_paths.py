@@ -2,6 +2,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
@@ -9,6 +10,42 @@ from md_changer.core import allocate_output_path, discover_markdown_files
 
 
 class DiscoverMarkdownFilesTests(unittest.TestCase):
+    def test_sorts_case_fold_ties_by_original_resolved_path(self) -> None:
+        class ResolvedPath:
+            def __init__(self, value: str) -> None:
+                self.value = value
+
+            def __str__(self) -> str:
+                return self.value
+
+            def __hash__(self) -> int:
+                return hash(self.value)
+
+            def __eq__(self, other: object) -> bool:
+                return isinstance(other, ResolvedPath) and self.value == other.value
+
+        class Candidate:
+            suffix = ".md"
+
+            def __init__(self, value: str) -> None:
+                self.resolved = ResolvedPath(value)
+
+            def is_file(self) -> bool:
+                return True
+
+            def resolve(self) -> ResolvedPath:
+                return self.resolved
+
+        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as temporary_directory:
+            directory = Path(temporary_directory)
+            lower = Candidate("C:/docs/a.md")
+            upper = Candidate("C:/docs/A.md")
+
+            with patch.object(Path, "rglob", return_value=[lower, upper]):
+                actual = discover_markdown_files([str(directory)])
+
+            self.assertEqual(actual, [upper.resolved, lower.resolved])
+
     def test_accepts_only_existing_markdown_suffixes_case_insensitively(self) -> None:
         with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as temporary_directory:
             directory = Path(temporary_directory)

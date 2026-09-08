@@ -31,7 +31,10 @@ def discover_markdown_files(raw_inputs: Iterable[str]) -> list[Path]:
         elif path.is_dir():
             candidates = sorted(
                 (candidate for candidate in path.rglob("*") if candidate.is_file()),
-                key=lambda candidate: str(candidate.resolve()).casefold(),
+                key=lambda candidate: (
+                    str(candidate.resolve()).casefold(),
+                    str(candidate.resolve()),
+                ),
             )
         else:
             continue
