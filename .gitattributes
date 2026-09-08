@@ -1,0 +1,3 @@
+# Preserve vendored distribution bytes across Windows checkouts.
+src/md_changer/assets/mermaid.min.js -text -diff
+src/md_changer/assets/mermaid.LICENSE.txt -text
