@@ -13,7 +13,7 @@ from pathlib import Path
 import markdown
 from playwright.sync_api import Browser, sync_playwright
 
-from md_changer.styles import PDF_CSS
+from md_changer.themes import compose_css
 
 APP_NAME = "Markdown PDF 변환기"
 MARKDOWN_SUFFIXES = {".md", ".markdown"}
@@ -82,7 +82,13 @@ def configure_playwright_browser_path() -> None:
         os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(bundled_browser_dir)
 
 
-def build_html(markdown_text: str, source_path: Path, custom_css: str | None = None) -> str:
+def build_html(
+    markdown_text: str,
+    source_path: Path,
+    custom_css: str | None = None,
+    *,
+    theme: str = "default",
+) -> str:
     """Convert markdown text to styled HTML document."""
     body = markdown.markdown(
         markdown_text,
@@ -96,7 +102,7 @@ def build_html(markdown_text: str, source_path: Path, custom_css: str | None = N
     )
     base_uri = source_path.parent.resolve().as_uri() + "/"
     title = html.escape(source_path.stem)
-    css_content = custom_css if custom_css is not None else PDF_CSS
+    css_content = compose_css(theme, custom_css)
 
     return f"""<!doctype html>
 <html lang="ko">
@@ -152,7 +158,12 @@ def get_browser_context():
 
 
 def convert_markdown_to_pdf(
-    input_file: Path, output_folder: Path, browser: Browser | None = None
+    input_file: Path,
+    output_folder: Path,
+    browser: Browser | None = None,
+    *,
+    theme: str = "default",
+    custom_css: str | None = None,
 ) -> Path:
     """Convert a single Markdown file into a PDF file using Playwright.
 
@@ -164,7 +175,7 @@ def convert_markdown_to_pdf(
 
     markdown_text = input_file.read_text(encoding="utf-8")
     output_file = allocate_output_path(input_file, output_folder)
-    html_text = build_html(markdown_text, input_file)
+    html_text = build_html(markdown_text, input_file, custom_css, theme=theme)
 
     html_file = output_folder / f".{input_file.stem}.md_changer_{uuid.uuid4().hex}.html"
 
