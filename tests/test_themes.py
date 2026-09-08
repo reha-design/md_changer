@@ -69,6 +69,9 @@ class ConversionThemeTests(unittest.TestCase):
             def pdf(self, *, path: str, **_kwargs: object) -> None:
                 Path(path).write_bytes(b"pdf")
 
+            def evaluate(self, _expression: str) -> None:
+                pass
+
             def close(self) -> None:
                 pass
 
@@ -76,7 +79,7 @@ class ConversionThemeTests(unittest.TestCase):
             def __init__(self) -> None:
                 self.page = CapturingPage()
 
-            def new_page(self) -> CapturingPage:
+            def new_page(self, **_kwargs: object) -> CapturingPage:
                 return self.page
 
         with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as temporary_directory:
