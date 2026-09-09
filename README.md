@@ -2,7 +2,7 @@
 
 Markdown을 Playwright Chromium으로 A4 PDF로 변환하는 Windows GUI 및 CLI입니다. Python **3.13 이상**과 `uv`를 사용합니다. Mermaid 다이어그램, 네 가지 테마, 사용자 CSS와 파일별 변환 결과를 지원합니다.
 
-## 패치 노트 — 테마·Mermaid·안전한 일괄 변환
+## 패치 노트 v1.1.0 — 테마·Mermaid·안전한 일괄 변환
 
 - `default`, `modern`, `minimal`, `report` 문서 테마와 사용자 CSS 파일 적용을 추가했습니다.
 - ` ```mermaid ` 코드 블록을 로컬 Mermaid 11.17.2 런타임으로 렌더링합니다. CDN 없이 동작하며, 다이어그램 오류가 난 파일만 실패 처리하고 다음 파일을 계속 변환합니다.
