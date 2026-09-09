@@ -1,6 +1,6 @@
 """Default CSS and HTML template definitions for Markdown to PDF conversion."""
 
-PDF_CSS = """
+COMMON_PRINT_CSS = """
 @page {
   size: A4;
   margin: 18mm 16mm;
@@ -116,3 +116,7 @@ hr {
   margin: 24px 0;
 }
 """
+
+# Retained as a public compatibility alias for callers that imported the
+# original stylesheet before themes were introduced.
+PDF_CSS = COMMON_PRINT_CSS

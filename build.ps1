@@ -1,12 +1,13 @@
 $ErrorActionPreference = "Stop"
 
 $projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$pythonCommand = Get-Command python -ErrorAction Stop
+Set-Location $projectRoot
 
 $env:UV_CACHE_DIR = Join-Path $projectRoot ".uv-cache"
 $env:UV_NO_MANAGED_PYTHON = "1"
 $env:UV_PYTHON_DOWNLOADS = "never"
-$env:UV_PYTHON = $pythonCommand.Source
+# Let uv select an installed Python compatible with requires-python, while
+# honoring an explicit UV_PYTHON supplied by the caller.
 
 function Invoke-NativeCommand {
     param(
@@ -23,17 +24,28 @@ function Invoke-NativeCommand {
     }
 }
 
+foreach ($asset in @("mermaid.min.js", "mermaid.LICENSE.txt")) {
+    $assetPath = Join-Path $projectRoot "src\md_changer\assets\$asset"
+    if (!(Test-Path -LiteralPath $assetPath -PathType Leaf) -or (Get-Item -LiteralPath $assetPath).Length -eq 0) {
+        throw "Required Mermaid asset is missing or empty: $assetPath"
+    }
+}
+
 Invoke-NativeCommand "Syncing Python environment with uv..." {
     uv sync --group build
 }
 
+$env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $projectRoot "ms-playwright"
 if (Test-Path "ms-playwright\chromium-*") {
     Write-Host "Bundled Chromium already exists. Skipping browser install."
 } else {
     Invoke-NativeCommand "Installing bundled Chromium into ./ms-playwright..." {
-        $env:PLAYWRIGHT_BROWSERS_PATH = "ms-playwright"
         uv run playwright install chromium
     }
+}
+
+Invoke-NativeCommand "Running the full unittest suite..." {
+    uv run python -m unittest discover -s tests -v
 }
 
 Invoke-NativeCommand "Building portable Windows app..." {

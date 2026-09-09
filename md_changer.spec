@@ -3,13 +3,13 @@
 from pathlib import Path
 
 from PyInstaller.building.build_main import Analysis, EXE, COLLECT, PYZ
-from PyInstaller.utils.hooks import collect_all
+from PyInstaller.utils.hooks import collect_all, collect_data_files
 
 
 project_dir = Path.cwd()
 playwright_datas, playwright_binaries, playwright_hiddenimports = collect_all("playwright")
 
-datas = list(playwright_datas)
+datas = list(playwright_datas) + collect_data_files("md_changer")
 binaries = list(playwright_binaries)
 hiddenimports = list(playwright_hiddenimports)
 
@@ -19,8 +19,8 @@ if browser_dir.exists():
 
 
 a = Analysis(
-    ["md_changer.py"],
-    pathex=[str(project_dir)],
+    ["main.py"],
+    pathex=[str(project_dir / "src")],
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
