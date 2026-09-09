@@ -2,6 +2,14 @@
 
 Markdown을 Playwright Chromium으로 A4 PDF로 변환하는 Windows GUI 및 CLI입니다. Python **3.13 이상**과 `uv`를 사용합니다. Mermaid 다이어그램, 네 가지 테마, 사용자 CSS와 파일별 변환 결과를 지원합니다.
 
+## 패치 노트 — 테마·Mermaid·안전한 일괄 변환
+
+- `default`, `modern`, `minimal`, `report` 문서 테마와 사용자 CSS 파일 적용을 추가했습니다.
+- ` ```mermaid ` 코드 블록을 로컬 Mermaid 11.17.2 런타임으로 렌더링합니다. CDN 없이 동작하며, 다이어그램 오류가 난 파일만 실패 처리하고 다음 파일을 계속 변환합니다.
+- CLI와 GUI 모두 파일별 성공·실패 결과를 보여줍니다. CLI의 `--json`은 부분 성공과 오류를 구조화해 반환합니다.
+- 같은 이름의 PDF를 덮어쓰지 않고 `name-2.pdf`, `name-3.pdf`처럼 자동으로 이름을 분리합니다.
+- 포터블 EXE와 wheel/uvx 패키지에 Mermaid 런타임 및 라이선스를 포함하도록 빌드 구성을 보완했습니다.
+
 ## 설치 및 CLI
 
 소스 실행은 Python 의존성과 Chromium을 먼저 설치합니다. 최초 설치에는 네트워크가 필요합니다.
@@ -19,9 +27,38 @@ uv run python main.py -i document.md -o output --theme modern --json
 uvx --from . md-changer -i document.md -o output --theme report --css custom.css --json
 ```
 
+가상환경을 이미 만든 개발 환경에서는 다음처럼 직접 실행할 수 있습니다.
+
+```powershell
+.\.venv\Scripts\python.exe main.py -i document.md -o output --theme modern --json
+```
+
+여러 파일 또는 폴더를 한 번에 지정할 수도 있습니다.
+
+```powershell
+uv run python main.py -i docs\guide.md docs\release-notes.md docs\manuals -o output --theme report
+```
+
 `-i` / `--input`은 파일 또는 폴더를 여러 개 받습니다. 폴더는 하위 폴더까지 검색하며 `.md`, `.markdown` 확장자를 대소문자 구분 없이 처리합니다. 중복 입력은 제거합니다. `-o` / `--output` 생략 시 첫 번째 발견 파일의 폴더에 저장합니다. 기존 PDF를 덮어쓰지 않고 `document.pdf`, `document-2.pdf`, `document-3.pdf` 순으로 빈 이름을 사용합니다. 같은 이름을 가진 여러 입력에도 적용됩니다.
 
 `--quiet` / `-q`는 일반 진행 메시지를 숨깁니다. `--json`을 함께 쓰면 JSON 결과는 계속 출력합니다.
+
+### CLI 옵션 요약
+
+| 옵션 | 설명 |
+| --- | --- |
+| `-i`, `--input PATH [PATH ...]` | 변환할 Markdown 파일 또는 재귀 검색할 폴더를 하나 이상 지정합니다. |
+| `-o`, `--output PATH` | PDF 출력 폴더를 지정합니다. 생략하면 첫 번째 입력 파일의 폴더를 사용합니다. |
+| `--theme NAME` | `default`, `modern`, `minimal`, `report` 중 문서 테마를 선택합니다. |
+| `--css PATH` | 선택한 테마 뒤에 적용할 UTF-8 CSS 파일을 지정합니다. |
+| `-q`, `--quiet` | 일반 진행 메시지를 숨깁니다. 오류는 stderr에 계속 출력합니다. |
+| `--json` | 성공·부분 성공·오류 결과를 JSON 한 개로 stdout에 출력합니다. 자동화에 적합합니다. |
+
+전체 옵션은 다음 명령으로 확인할 수 있습니다.
+
+```powershell
+uv run python main.py --help
+```
 
 ## 테마와 CSS
 
